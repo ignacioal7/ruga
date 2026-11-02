@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Copiar mensaje</title>
+<style>
+  :root { --fondo:#faf7fc; --texto:#222; --caja:#fff; --borde:#ddd; --verde:#1F7A4D; --morado:#8E44AD; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo:#1b1820; --texto:#eee; --caja:#2a2630; --borde:#444; }
+  }
+  body { margin:0; padding:16px; background:var(--fondo); color:var(--texto);
+         font-family:-apple-system, Arial, sans-serif; font-size:16px; }
+  .wrap { max-width:640px; margin:0 auto; }
+  button, a.btn { display:block; width:100%; box-sizing:border-box; border:0; border-radius:10px;
+         padding:16px; font-size:18px; font-weight:bold; color:#fff; text-align:center;
+         text-decoration:none; margin:10px 0; cursor:pointer; }
+  #copiar { background:var(--verde); }
+  #abrir { background:var(--morado); }
+  #texto { white-space:pre-wrap; background:var(--caja); border:1px solid var(--borde);
+           border-radius:10px; padding:12px; margin-top:12px; line-height:1.4; }
+  #estado { text-align:center; min-height:1.4em; font-weight:bold; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button id="copiar">Copiar mensaje</button>
+  <div id="estado"></div>
+  <a id="abrir" class="btn" href="#" style="display:none">Abrir Instagram</a>
+  <div id="texto"></div>
+</div>
+<script>
+  // El mensaje viaja en la parte de la dirección tras "#", que no se envía a ningún servidor.
+  var p = new URLSearchParams(location.hash.slice(1));
+  var texto = "";
+  try {
+    var b64 = (p.get("t") || "").replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    var bytes = Uint8Array.from(atob(b64), function (c) { return c.charCodeAt(0); });
+    texto = new TextDecoder("utf-8").decode(bytes);
+  } catch (e) { texto = ""; }
+  document.getElementById("texto").textContent = texto || "No hay mensaje en este enlace.";
+  var ig = p.get("ig");
+  if (ig) {
+    var a = document.getElementById("abrir");
+    a.href = "https://www.instagram.com/" + encodeURIComponent(ig) + "/";
+    a.style.display = "block";
+  }
+  function avisar(t) { document.getElementById("estado").textContent = t; }
+  document.getElementById("copiar").addEventListener("click", function () {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(texto).then(function () { avisar("✓ Copiado. Ahora abre Instagram y pégalo."); },
+                                                function () { copiaManual(); });
+    } else { copiaManual(); }
+  });
+  function copiaManual() {
+    var t = document.createElement("textarea");
+    t.value = texto; document.body.appendChild(t); t.select();
+    try { document.execCommand("copy"); avisar("✓ Copiado. Ahora abre Instagram y pégalo."); }
+    catch (e) { avisar("No se pudo copiar: mantén pulsado el texto y copia."); }
+    document.body.removeChild(t);
+  }
+</script>
+</body>
+</html>
